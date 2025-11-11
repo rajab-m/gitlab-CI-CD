@@ -17,6 +17,10 @@ spec:
         app: orders
         env: {{ .Values.global.environment }}
     spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | nindent 8 }}
+    {{- end }}
       containers:
         - name: orders
           image: "{{ .Values.orders.image.repository }}:{{ .Values.orders.image.tag }}"

@@ -17,6 +17,10 @@ spec:
         app: users
         env: {{ .Values.global.environment }}
     spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | nindent 8 }}
+    {{- end }}
       containers:
         - name: users
           image: "{{ .Values.users.image.repository }}:{{ .Values.users.image.tag }}"
