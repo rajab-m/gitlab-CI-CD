@@ -16,8 +16,8 @@ gateway:
   envFile: ../gateway/.env
   resources:
     limits:
-      cpu: "750m"
-      memory: "768Mi"
+      cpu: "200m"
+      memory: "512Mi"
 
 users:
   image:
@@ -27,8 +27,8 @@ users:
   envFile: ../users/.env
   resources:
     limits:
-      cpu: "750m"
-      memory: "768Mi"
+      cpu: "200m"
+      memory: "512Mi"
 
 orders:
   image: 
@@ -38,5 +38,5 @@ orders:
   envFile: ../orders/.env
   resources:
     limits:
-      cpu: "750m"
-      memory: "768Mi"
+      cpu: "200m"
+      memory: "512Mi"
