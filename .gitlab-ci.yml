@@ -96,7 +96,7 @@ stop_dev:
   # Don't stop the "review" for master branch or tags,
   # it is only for branches (so PRs (most of the time))
   environment:
-    name: dev-$CI_BUILD_REF_NAME
+    name: dev-$CI_COMMIT_REF_NAME
     action: stop
   script:
     - sudo helm uninstall app -n $NAMESPACE
@@ -111,8 +111,6 @@ deploy_dev:
   stage: deploy_dev
   variables:
     NAMESPACE: dev
-  services:
-    - docker:dind
   script:
     # Setup kube config
     - rm -rf .kube
