@@ -1,0 +1,35 @@
+global:
+  environment: dev
+  namespace: dev
+  replicaCount: 1
+  imagePullPolicy: IfNotPresent
+
+gateway:
+  image: gateway-image:latest
+  port: 8000
+  servicePort: 30001
+  nodeType: NodePort
+  envFile: ../gateway/.env
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+users:
+  image: users-image:latest
+  port: 8000
+  envFile: ../users/.env
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+orders:
+  image: orders-image:latest
+  port: 8000
+  envFile: ../orders/.env
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+

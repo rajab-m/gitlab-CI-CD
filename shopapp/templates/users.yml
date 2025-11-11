@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: users
+    env: {{ .Values.global.environment }}
+spec:
+  replicas: {{ .Values.global.replicaCount }}
+  selector:
+    matchLabels:
+      app: users
+  template:
+    metadata:
+      labels:
+        app: users
+        env: {{ .Values.global.environment }}
+    spec:
+      containers:
+        - name: users
+          image: {{ .Values.users.image }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          command: ["sh", "-c", "uvicorn main:app --reload --host 0.0.0.0"]
+          ports:
+            - containerPort: {{ .Values.users.port }}
+          resources: {{- toYaml .Values.users.resources | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: users-env
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: users-env
+data:
+{{ (.Files.Get .Values.users.envFile) | indent 2 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: users
+  labels:
+    app: users
+    env: {{ .Values.global.environment }}
+spec:
+  selector:
+    app: users
+  ports:
+    - protocol: TCP
+      port: {{ .Values.users.port }}
+      targetPort: {{ .Values.users.port }}
+  type: ClusterIP

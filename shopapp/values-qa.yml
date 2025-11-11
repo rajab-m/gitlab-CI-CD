@@ -1,0 +1,33 @@
+global:
+  environment: qa
+  namespace: qa
+  replicaCount: 1
+  imagePullPolicy: IfNotPresent
+
+gateway:
+  image: baranbartu/k-api-gateway:latest
+  port: 8000
+  servicePort: 30002
+  envFile: ../gateway/.env
+  resources:
+    limits:
+      cpu: "750m"
+      memory: "768Mi"
+
+users:
+  image: baranbartu/k-users:latest
+  port: 8000
+  envFile: ../users/.env
+  resources:
+    limits:
+      cpu: "750m"
+      memory: "768Mi"
+
+orders:
+  image: baranbartu/k-orders:latest
+  port: 8000
+  envFile: ../orders/.env
+  resources:
+    limits:
+      cpu: "750m"
+      memory: "768Mi"

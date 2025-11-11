@@ -1,0 +1,33 @@
+global:
+  environment: prod
+  namespace: prod
+  replicaCount: 3
+  imagePullPolicy: IfNotPresent
+
+gateway:
+  image: baranbartu/k-api-gateway:latest
+  port: 8000
+  servicePort: 30004
+  envFile: ../gateway/.env
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+
+users:
+  image: baranbartu/k-users:latest
+  port: 8000
+  envFile: ../users/.env
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+
+orders:
+  image: baranbartu/k-orders:latest
+  port: 8000
+  envFile: ../orders/.env
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2Gi"

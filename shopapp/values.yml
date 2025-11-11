@@ -1,0 +1,23 @@
+global:
+  environment: "dev"     # overridden per env
+  replicaCount: 1
+  imagePullPolicy: IfNotPresent
+
+gateway:
+  image: baranbartu/k-api-gateway:latest
+  port: 8000
+  servicePort: 30005
+  envFile: ../gateway/.env
+  resources: {}
+
+users:
+  image: baranbartu/k-users:latest
+  port: 8000
+  envFile: ../users/.env
+  resources: {}
+
+orders:
+  image: baranbartu/k-orders:latest
+  port: 8000
+  envFile: ../orders/.env
+  resources: {}

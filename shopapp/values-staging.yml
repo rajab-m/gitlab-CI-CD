@@ -1,0 +1,33 @@
+global:
+  environment: staging
+  namespace: staging
+  replicaCount: 2
+  imagePullPolicy: IfNotPresent
+
+gateway:
+  image: baranbartu/k-api-gateway:latest
+  port: 8000
+  servicePort: 30003
+  envFile: ../gateway/.env
+  resources:
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+
+users:
+  image: baranbartu/k-users:latest
+  port: 8000
+  envFile: ../users/.env
+  resources:
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+
+orders:
+  image: baranbartu/k-orders:latest
+  port: 8000
+  envFile: ../orders/.env
+  resources:
+    limits:
+      cpu: "1"
+      memory: "1Gi"
