@@ -1,0 +1,30 @@
+variables:
+  # The domain used for the live deploy_prodment
+  KUBE_NAMESPACE_dev: dev
+  KUBE_NAMESPACE_staging: staging
+  KUBE_NAMESPACE_prod: prod
+  IP_DEV: 54.217.94.203
+  IP_STAGING: 54.217.94.203
+  IP_PROD: 54.217.94.203
+  NODEPORT_DEV: 30001
+  NODEPORT_QA: 30002
+  NODEPORT_STAGING: 30003
+  NODEPORT_PROD: 30004
+
+
+
+stages:
+  - build
+
+
+build:
+  stage: build
+  script:
+    # Build the container image
+    - docker build -t "$CI_REGISTRY_IMAGE/gateway:latest" gateway/Dockerfile gateway
+    # Tag the container image from latest to the commit ref
+    - docker tag "$CI_REGISTRY_IMAGE/gateway:latest" "$CI_REGISTRY_IMAGE/gateway:$CI_COMMIT_SHORT_SHA"
+    - docker build -t "$CI_REGISTRY_IMAGE/users:latest" users/Dockerfile users
+    - docker tag "$CI_REGISTRY_IMAGE/users:latest" "$CI_REGISTRY_IMAGE/users:$CI_COMMIT_SHORT_SHA"
+    - docker build -t "$CI_REGISTRY_IMAGE/orders:latest" orders/Dockerfile users
+    - docker tag "$CI_REGISTRY_IMAGE/orders:latest" "$CI_REGISTRY_IMAGE/orders:$CI_COMMIT_SHORT_SHA"
