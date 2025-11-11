@@ -24,6 +24,7 @@ stages:
   - deploy_qa
   - deploy_staging
   - deploy_prod
+  - push_docker_hub
 
 
 build:
@@ -175,4 +176,41 @@ deploy_staging:
     - cat $KUBE_CONFIG > .kube/config
     - sudo helm upgrade --install app shopapp/ --values=shopapp/values-staging.yml --namespace "$NAMESPACE" --set gateway.image.repository="$CI_REGISTRY_IMAGE/gateway" --set gateway.image.tag="$CI_COMMIT_SHORT_SHA" --set users.image.repository="$CI_REGISTRY_IMAGE/users" --set users.image.tag="$CI_COMMIT_SHORT_SHA" --set orders.image.repository="$CI_REGISTRY_IMAGE/orders" --set orders.image.tag="$CI_COMMIT_SHORT_SHA" --set gateway.servicePort="$NODEPORT_STAGING"
 
+deploy_prod:
+  stage: deploy_prod
+  when: manual                       # Manual deployment
+  only:
+    - main                            # Only allow on main branch
+  environment:
+    name: prod
+    url: http://$IP_PROD:$NODEPORT_PROD/docs
+  variables:
+    NAMESPACE: prod
+  script:
+    # Setup kubeconfig
+    - rm -rf .kube
+    - mkdir .kube
+    - cat $KUBE_CONFIG > .kube/config
+    # Deploy via Helm
+    - sudo helm upgrade --install app shopapp/ --values=shopapp/values-prod.yml --namespace "$NAMESPACE" --set gateway.image.repository="$CI_REGISTRY_IMAGE/gateway" --set gateway.image.tag="$CI_COMMIT_SHORT_SHA" --set users.image.repository="$CI_REGISTRY_IMAGE/users" --set users.image.tag="$CI_COMMIT_SHORT_SHA" --set orders.image.repository="$CI_REGISTRY_IMAGE/orders" --set orders.image.tag="$CI_COMMIT_SHORT_SHA" --set gateway.servicePort="$NODEPORT_PROD"
 
+push_docker_hub:
+  stage: push_docker_hub
+  variables:
+    DOCKER_HUB_USERNAME: "$DOCKER_HUB_USERNAME"
+    DOCKER_HUB_PASSWORD: "$DOCKER_HUB_PASSWORD"
+  before_script:
+    # Login to Docker Hub
+    - echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
+  script:
+    # Push gateway
+    - docker tag "$CI_REGISTRY_IMAGE/gateway:$CI_COMMIT_SHORT_SHA" "$DOCKER_HUB_USERNAME/gateway:latest"
+    - docker push "$DOCKER_HUB_USERNAME/gateway:latest"
+
+    # Push users
+    - docker tag "$CI_REGISTRY_IMAGE/users:$CI_COMMIT_SHORT_SHA" "$DOCKER_HUB_USERNAME/users:latest"
+    - docker push "$DOCKER_HUB_USERNAME/users:latest"
+
+    # Push orders
+    - docker tag "$CI_REGISTRY_IMAGE/orders:$CI_COMMIT_SHORT_SHA" "$DOCKER_HUB_USERNAME/orders:latest"
+    - docker push "$DOCKER_HUB_USERNAME/orders:latest"
