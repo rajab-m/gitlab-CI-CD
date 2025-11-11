@@ -194,9 +194,7 @@ deploy_prod:
 
 push_docker_hub:
   stage: push_docker_hub
-  variables:
-    DOCKER_HUB_USERNAME: "$DOCKER_HUB_USERNAME"
-    DOCKER_HUB_PASSWORD: "$DOCKER_HUB_PASSWORD"
+
   before_script:
     # Login to Docker Hub
     - echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
