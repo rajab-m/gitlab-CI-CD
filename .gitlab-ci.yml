@@ -11,6 +11,9 @@ variables:
   NODEPORT_STAGING: 30003
   NODEPORT_PROD: 30004
 
+default:
+  tags:
+    - gitlab   # define the default runner, this runner is a shell executer 
 
 
 stages:
