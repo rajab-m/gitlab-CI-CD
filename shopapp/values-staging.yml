@@ -12,6 +12,7 @@ gateway:
     tag: latest
   port: 8000
   servicePort: 30003
+  nodeType: NodePort
   envFile: ../gateway/.env
   resources:
     limits:

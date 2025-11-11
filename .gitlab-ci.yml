@@ -159,7 +159,7 @@ deploy_qa:
     - rm -rf .kube
     - mkdir .kube
     - cat $KUBE_CONFIG > .kube/config
-    - sudo helm upgrade --install app shopapp/ --values=shopapp/values-qa.yml --namespace "$NAMESPACE" --set gateway.image.repository="$CI_REGISTRY_IMAGE/gateway" --set gateway.image.tag="$CI_COMMIT_SHORT_SHA" --set users.image.repository="$CI_REGISTRY_IMAGE/users" --set users.image.tag="$CI_COMMIT_SHORT_SHA" --set orders.image.repository="$CI_REGISTRY_IMAGE/orders" --set orders.image.tag="$CI_COMMIT_SHORT_SHA" --set gateway.servicePort="$NODEPORT_QA"
+    - sudo helm upgrade --install app shopapp/ --values=shopapp/values-qa.yml --namespace "$NAMESPACE" --set gateway.image.repository="$CI_REGISTRY_IMAGE/gateway" --set gateway.image.tag="$CI_COMMIT_SHORT_SHA" --set users.image.repository="$CI_REGISTRY_IMAGE/users" --set users.image.tag="$CI_COMMIT_SHORT_SHA" --set orders.image.repository="$CI_REGISTRY_IMAGE/orders" --set orders.image.tag="$CI_COMMIT_SHORT_SHA" --set gateway.servicePort="$NODEPORT_DEV"
 
 
 deploy_staging:
