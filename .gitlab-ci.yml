@@ -51,5 +51,9 @@ run:
     # Cleanup
     - docker stop gateway users orders
     - docker rm gateway users orders
+        # Cleanup images
+    - docker rmi -f "$CI_REGISTRY_IMAGE/gateway:latest" "$CI_REGISTRY_IMAGE/gateway:$CI_COMMIT_SHORT_SHA"
+    - docker rmi -f "$CI_REGISTRY_IMAGE/users:latest" "$CI_REGISTRY_IMAGE/users:$CI_COMMIT_SHORT_SHA"
+    - docker rmi -f "$CI_REGISTRY_IMAGE/orders:latest" "$CI_REGISTRY_IMAGE/orders:$CI_COMMIT_SHORT_SHA"
 
 
