@@ -18,6 +18,7 @@ default:
 
 stages:
   - build
+  - run
 
 
 build:
@@ -31,3 +32,24 @@ build:
     - docker tag "$CI_REGISTRY_IMAGE/users:latest" "$CI_REGISTRY_IMAGE/users:$CI_COMMIT_SHORT_SHA"
     - docker build -t "$CI_REGISTRY_IMAGE/orders:latest" -f orders/Dockerfile users
     - docker tag "$CI_REGISTRY_IMAGE/orders:latest" "$CI_REGISTRY_IMAGE/orders:$CI_COMMIT_SHORT_SHA"
+
+run:
+  stage: run
+  script:
+    # Start containers with uvicorn
+    - docker run -d --name users "$CI_REGISTRY_IMAGE/users:latest" sh -c "uvicorn main:app --reload --host 0.0.0.0"
+    - docker run -d --name orders "$CI_REGISTRY_IMAGE/orders:latest" sh -c "uvicorn main:app --reload --host 0.0.0.0"
+    - docker run -d -p 8001:8000 --name gateway "$CI_REGISTRY_IMAGE/gateway:latest" sh -c "uvicorn main:app --reload --host 0.0.0.0"
+
+    # Give them some time to start
+    - sleep 10
+
+    # Test endpoints
+    - curl http://localhost:8001/docs  # gateway
+    # For users/orders, you may need container IPs or a custom network
+
+    # Cleanup
+    - docker stop gateway users orders
+    - docker rm gateway users orders
+
+
