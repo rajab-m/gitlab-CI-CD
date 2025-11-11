@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: users
-          image: {{ .Values.users.image }}
+          image: "{{ .Values.users.image.repository }}:{{ .Values.users.image.tag }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           command: ["sh", "-c", "uvicorn main:app --reload --host 0.0.0.0"]
           ports:

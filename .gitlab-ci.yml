@@ -3,9 +3,9 @@ variables:
   KUBE_NAMESPACE_dev: dev
   KUBE_NAMESPACE_staging: staging
   KUBE_NAMESPACE_prod: prod
-  IP_DEV: 54.217.94.203
-  IP_STAGING: 54.217.94.203
-  IP_PROD: 54.217.94.203
+  IP_DEV: localhost
+  IP_STAGING: localhost
+  IP_PROD: localhost
   NODEPORT_DEV: 30001
   NODEPORT_QA: 30002
   NODEPORT_STAGING: 30003
@@ -20,6 +20,7 @@ stages:
   - build
   - run
   - push
+  - deploy_dev
 
 
 build:
@@ -86,6 +87,37 @@ push:
     - docker rmi -f "$CI_REGISTRY_IMAGE/gateway:latest" "$CI_REGISTRY_IMAGE/gateway:$CI_COMMIT_SHORT_SHA"
     - docker rmi -f "$CI_REGISTRY_IMAGE/users:latest" "$CI_REGISTRY_IMAGE/users:$CI_COMMIT_SHORT_SHA"
     - docker rmi -f "$CI_REGISTRY_IMAGE/orders:latest" "$CI_REGISTRY_IMAGE/orders:$CI_COMMIT_SHORT_SHA"
+
+deploy_dev:
+  image: docker:latest
+  environment:
+    name: dev-$CI_COMMIT_REF_NAME
+    url: http://$IP_DEV:$NODEPORT_DEV
+    on_stop: stop_dev
+  stage: deploy_dev
+  variables:
+    NAMESPACE: dev
+  services:
+    - docker:dind
+  script:
+    # Setup kube config
+    - rm -rf .kube
+    - mkdir .kube
+    - cat $KUBE_CONFIG > .kube/config
+    # Use dev values from shopapp
+    - cp shopapp/values-dev.yml values.yml
+    - cat values.yml
+    # Deploy via Helm
+    - sudo helm upgrade --install app shopapp/ \
+        --values=values-dev.yml \
+        --namespace $NAMESPACE \
+        --set gateway.image.repository="$CI_REGISTRY_IMAGE/gateway" \
+        --set gateway.image.tag="$CI_COMMIT_SHORT_SHA" \
+        --set users.image.repository="$CI_REGISTRY_IMAGE/users" \
+        --set users.image.tag="$CI_COMMIT_SHORT_SHA" \
+        --set orders.image.repository="$CI_REGISTRY_IMAGE/orders" \
+        --set orders.image.tag="$CI_COMMIT_SHORT_SHA" \
+        --set gateway.servicePort="$NODEPORT_DEV"
 
 
 
