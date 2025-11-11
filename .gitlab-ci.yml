@@ -112,7 +112,7 @@ stop_qa:
   # Don't stop the "review" for master branch or tags,
   # it is only for branches (so PRs (most of the time))
   environment:
-    name: dev-$CI_COMMIT_REF_NAME
+    name: qa-$CI_COMMIT_REF_NAME
     action: stop
   script:
     - sudo helm uninstall app -n $NAMESPACE
@@ -125,7 +125,7 @@ stop_staging:
   # Don't stop the "review" for master branch or tags,
   # it is only for branches (so PRs (most of the time))
   environment:
-    name: dev-$CI_COMMIT_REF_NAME
+    name: staging-$CI_COMMIT_REF_NAME
     action: stop
   script:
     - sudo helm uninstall app -n $NAMESPACE
