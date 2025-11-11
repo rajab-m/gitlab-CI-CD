@@ -3,6 +3,8 @@ global:
   namespace: staging
   replicaCount: 2
   imagePullPolicy: IfNotPresent
+  imagePullSecrets:
+    - name: regcred
 
 gateway:
   image: baranbartu/k-api-gateway:latest

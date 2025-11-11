@@ -3,6 +3,8 @@ global:
   namespace: qa
   replicaCount: 1
   imagePullPolicy: IfNotPresent
+  imagePullSecrets:
+    - name: regcred
 
 gateway:
   image: baranbartu/k-api-gateway:latest

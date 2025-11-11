@@ -3,9 +3,9 @@ variables:
   KUBE_NAMESPACE_dev: dev
   KUBE_NAMESPACE_staging: staging
   KUBE_NAMESPACE_prod: prod
-  IP_DEV: localhost
-  IP_STAGING: localhost
-  IP_PROD: localhost
+  IP_DEV: 3.250.217.34
+  IP_STAGING: 3.250.217.34
+  IP_PROD: 3.250.217.34
   NODEPORT_DEV: 30001
   NODEPORT_QA: 30002
   NODEPORT_STAGING: 30003

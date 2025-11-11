@@ -3,6 +3,8 @@ global:
   namespace: prod
   replicaCount: 3
   imagePullPolicy: IfNotPresent
+  imagePullSecrets:
+    - name: regcred
 
 gateway:
   image: baranbartu/k-api-gateway:latest
