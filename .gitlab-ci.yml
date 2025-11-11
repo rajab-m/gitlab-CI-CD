@@ -101,12 +101,36 @@ stop_dev:
   script:
     - sudo helm uninstall app -n $NAMESPACE
 
-
-deploy_dev:
-  image: docker:latest
+stop_qa:
+  stage: deploy_qa
+  variables:
+    NAMESPACE: qa
+  when: manual
+  # Don't stop the "review" for master branch or tags,
+  # it is only for branches (so PRs (most of the time))
   environment:
     name: dev-$CI_COMMIT_REF_NAME
-    url: http://$IP_DEV:$NODEPORT_DEV
+    action: stop
+  script:
+    - sudo helm uninstall app -n $NAMESPACE
+
+stop_staging:
+  stage: deploy_staging
+  variables:
+    NAMESPACE: staging
+  when: manual
+  # Don't stop the "review" for master branch or tags,
+  # it is only for branches (so PRs (most of the time))
+  environment:
+    name: dev-$CI_COMMIT_REF_NAME
+    action: stop
+  script:
+    - sudo helm uninstall app -n $NAMESPACE
+
+deploy_dev:
+  environment:
+    name: dev-$CI_COMMIT_REF_NAME
+    url: http://$IP_DEV:$NODEPORT_DEV/docs
     on_stop: stop_dev
   stage: deploy_dev
   variables:
@@ -116,13 +140,36 @@ deploy_dev:
     - rm -rf .kube
     - mkdir .kube
     - cat $KUBE_CONFIG > .kube/config
-    # Use dev values from shopapp
-    - cp shopapp/values-dev.yml values.yml
-    - cat values.yml
     # Deploy via Helm
     - sudo helm upgrade --install app shopapp/ --values=shopapp/values-dev.yml --namespace "$NAMESPACE" --set gateway.image.repository="$CI_REGISTRY_IMAGE/gateway" --set gateway.image.tag="$CI_COMMIT_SHORT_SHA" --set users.image.repository="$CI_REGISTRY_IMAGE/users" --set users.image.tag="$CI_COMMIT_SHORT_SHA" --set orders.image.repository="$CI_REGISTRY_IMAGE/orders" --set orders.image.tag="$CI_COMMIT_SHORT_SHA" --set gateway.servicePort="$NODEPORT_DEV"
 
+deploy_qa:
+  environment:
+    name: qa-$CI_COMMIT_REF_NAME
+    url: http://$IP_QA:$NODEPORT_QA/docs
+    on_stop: stop_qa
+  stage: deploy_qa
+  variables:
+    NAMESPACE: qa
+  script:
+    - rm -rf .kube
+    - mkdir .kube
+    - cat $KUBE_CONFIG > .kube/config
+    - sudo helm upgrade --install app shopapp/ --values=shopapp/values-qa.yml --namespace "$NAMESPACE" --set gateway.image.repository="$CI_REGISTRY_IMAGE/gateway" --set gateway.image.tag="$CI_COMMIT_SHORT_SHA" --set users.image.repository="$CI_REGISTRY_IMAGE/users" --set users.image.tag="$CI_COMMIT_SHORT_SHA" --set orders.image.repository="$CI_REGISTRY_IMAGE/orders" set orders.image.tag="$CI_COMMIT_SHORT_SHA" --set gateway.servicePort="$NODEPORT_QA"
 
 
+deploy_staging:
+  environment:
+    name: staging-$CI_COMMIT_REF_NAME
+    url: http://$IP_STAGING:$NODEPORT_STAGING/docs
+    on_stop: stop_staging
+  stage: deploy_staging
+  variables:
+    NAMESPACE: staging
+  script:
+    - rm -rf .kube
+    - mkdir .kube
+    - cat $KUBE_CONFIG > .kube/config
+    - sudo helm upgrade --install app shopapp/ --values=shopapp/values-staging.yml --namespace "$NAMESPACE" --set gateway.image.repository="$CI_REGISTRY_IMAGE/gateway" --set gateway.image.tag="$CI_COMMIT_SHORT_SHA" --set users.image.repository="$CI_REGISTRY_IMAGE/users" --set users.image.tag="$CI_COMMIT_SHORT_SHA" --set orders.image.repository="$CI_REGISTRY_IMAGE/orders" --set orders.image.tag="$CI_COMMIT_SHORT_SHA" --set gateway.servicePort="$NODEPORT_STAGING"
 
 
