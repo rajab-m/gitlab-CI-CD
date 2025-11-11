@@ -199,7 +199,7 @@ push_docker_hub:
     DOCKER_HUB_PASSWORD: "$DOCKER_HUB_PASSWORD"
   before_script:
     # Login to Docker Hub
-    - docker login -u "$DOCKER_HUB_USERNAME" -p "$DOCKER_HUB_PASSWORD"
+    - echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
   script:
     # Push gateway
     - docker tag "$CI_REGISTRY_IMAGE/gateway:$CI_COMMIT_SHORT_SHA" "$DOCKER_HUB_USERNAME/gateway:latest"
