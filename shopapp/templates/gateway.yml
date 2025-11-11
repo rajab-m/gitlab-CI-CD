@@ -17,9 +17,9 @@ spec:
         app: gateway
         env: {{ .Values.global.environment }}
     spec:
-      {{- with .Values.imagePullSecrets }}
+      {{- with .Values.global.imagePullSecrets }}
       imagePullSecrets:
-{{ toYaml . | nindent 6 }}
+{{ toYaml . | nindent 8 }}
     {{- end }}
 
       containers:

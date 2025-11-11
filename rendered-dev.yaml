@@ -1,0 +1,182 @@
+---
+# Source: shopapp/templates/gateway.yml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-env
+data:
+---
+# Source: shopapp/templates/orders.yml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orders-env
+data:
+---
+# Source: shopapp/templates/users.yml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: users-env
+data:
+---
+# Source: shopapp/templates/gateway.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  labels:
+    app: gateway
+    env: dev
+spec:
+  selector:
+    app: gateway
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 30001
+  type: NodePort
+---
+# Source: shopapp/templates/orders.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders
+  labels:
+    app: orders
+    env: dev
+spec:
+  selector:
+    app: orders
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+# Source: shopapp/templates/users.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: users
+  labels:
+    app: users
+    env: dev
+spec:
+  selector:
+    app: users
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+# Source: shopapp/templates/gateway.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: dev
+  labels:
+    app: gateway
+    env: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+        env: dev
+    spec:
+      imagePullSecrets:
+
+        - name: regcred
+
+      containers:
+        - name: gateway
+          image: "gateway-image:latest"
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "uvicorn main:app --reload --host 0.0.0.0"]
+          ports:
+            - containerPort: 8000
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          envFrom:
+            - configMapRef:
+                name: gateway-env
+---
+# Source: shopapp/templates/orders.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders
+  namespace: dev
+  labels:
+    app: orders
+    env: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orders
+  template:
+    metadata:
+      labels:
+        app: orders
+        env: dev
+    spec:
+      containers:
+        - name: orders
+          image: "orders-image:latest"
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "uvicorn main:app --reload --host 0.0.0.0"]
+          ports:
+            - containerPort: 8000
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          envFrom:
+            - configMapRef:
+                name: orders-env
+---
+# Source: shopapp/templates/users.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users
+  namespace: dev
+  labels:
+    app: users
+    env: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users
+  template:
+    metadata:
+      labels:
+        app: users
+        env: dev
+    spec:
+      containers:
+        - name: users
+          image: "users-image:latest"
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "uvicorn main:app --reload --host 0.0.0.0"]
+          ports:
+            - containerPort: 8000
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          envFrom:
+            - configMapRef:
+                name: users-env
