@@ -1,5 +1,18 @@
 # GITLAB DATASCIENTEST PROJECT
 
+## My Contribution (Author: Rajab Murtaja)
+
+### CI/CD Pipeline
+
+This fork adds a Helm chart and a GitLab CI/CD pipeline for automated builds, tests, and deployment.  
+- The `.gitlab-ci.yml` file is located in the root of the repository.  
+- The Helm chart folder is located in the root of the repository and is called `shopapp`.
+
+> **Note:** All other parts of the project and documentation are based on the original work by the main author.
+
+---
+
+# Original README
 # Microservices, API Gateway, Authentication with FastAPI
 
 - This repository consists of a set of small microservices following the API gateway approach.
