@@ -1,0 +1,42 @@
+global:
+  environment: qa
+  namespace: qa
+  replicaCount: 1
+  imagePullPolicy: IfNotPresent
+  imagePullSecrets:
+    - name: regcred
+
+gateway:
+  image:
+    repository: gateway-image
+    tag: latest
+  port: 8000
+  servicePort: 30002
+  nodeType: NodePort
+  envFile: ../gateway/.env
+  resources:
+    limits:
+      cpu: "200m"
+      memory: "512Mi"
+
+users:
+  image:
+    repository: users-image
+    tag: latest
+  port: 8000
+  envFile: ../users/.env
+  resources:
+    limits:
+      cpu: "200m"
+      memory: "512Mi"
+
+orders:
+  image: 
+    repository: orders-image
+    tag: latest
+  port: 8000
+  envFile: ../orders/.env
+  resources:
+    limits:
+      cpu: "200m"
+      memory: "512Mi"

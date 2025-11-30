@@ -1,0 +1,220 @@
+variables:
+  # The domain used for the live deploy_prodment
+  KUBE_NAMESPACE_dev: dev
+  KUBE_NAMESPACE_staging: staging
+  KUBE_NAMESPACE_prod: prod
+  IP_DEV: 18.203.223.76
+  IP_STAGING: 18.203.223.76
+  IP_PROD: 18.203.223.76
+  NODEPORT_DEV: 30001
+  NODEPORT_QA: 30002
+  NODEPORT_STAGING: 30003
+  NODEPORT_PROD: 30004
+
+default:
+  tags:
+    - gitlab   # define the default runner, this runner is a shell executer 
+
+
+stages:
+  - build
+  - run
+  - push
+  - deploy_dev
+  - deploy_qa
+  - deploy_staging
+  - deploy_prod
+  - push_docker_hub
+  - cleanup
+
+
+build:
+  stage: build
+  script:
+    # Build the container image
+    - docker build -t "$CI_REGISTRY_IMAGE/gateway:latest" -f gateway/Dockerfile gateway
+    # Tag the container image from latest to the commit ref
+    - docker tag "$CI_REGISTRY_IMAGE/gateway:latest" "$CI_REGISTRY_IMAGE/gateway:$CI_COMMIT_SHORT_SHA"
+    - docker tag "$CI_REGISTRY_IMAGE/gateway:latest" "$CI_REGISTRY_IMAGE/gateway:$CI_COMMIT_REF_NAME"
+
+    - docker build -t "$CI_REGISTRY_IMAGE/users:latest" -f users/Dockerfile users
+    - docker tag "$CI_REGISTRY_IMAGE/users:latest" "$CI_REGISTRY_IMAGE/users:$CI_COMMIT_SHORT_SHA"
+    - docker tag "$CI_REGISTRY_IMAGE/users:latest" "$CI_REGISTRY_IMAGE/users:$CI_COMMIT_REF_NAME"
+
+
+    - docker build -t "$CI_REGISTRY_IMAGE/orders:latest" -f orders/Dockerfile users
+    - docker tag "$CI_REGISTRY_IMAGE/orders:latest" "$CI_REGISTRY_IMAGE/orders:$CI_COMMIT_SHORT_SHA"
+    - docker tag "$CI_REGISTRY_IMAGE/orders:latest" "$CI_REGISTRY_IMAGE/orders:$CI_COMMIT_REF_NAME"
+    
+
+run:
+  stage: run
+  script:
+    # Start containers with uvicorn
+    - docker run -d --name users "$CI_REGISTRY_IMAGE/users:latest" sh -c "uvicorn main:app --reload --host 0.0.0.0"
+    - docker run -d --name orders "$CI_REGISTRY_IMAGE/orders:latest" sh -c "uvicorn main:app --reload --host 0.0.0.0"
+    - docker run -d -p 8001:8000 --name gateway "$CI_REGISTRY_IMAGE/gateway:latest" sh -c "uvicorn main:app --reload --host 0.0.0.0"
+
+    # Give them some time to start
+    - sleep 10
+
+    # Test endpoints
+    - curl http://localhost:8001/docs  # gateway
+    # For users/orders, you may need container IPs or a custom network
+
+    # Cleanup
+    - docker stop gateway users orders
+    - docker rm gateway users orders
+
+push:
+  stage: push
+  before_script:
+    # Show Docker daemon info (optional, good for debugging)
+    - docker info
+    # Login to GitLab Container Registry
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  script:
+    # Push gateway images
+    - docker push "$CI_REGISTRY_IMAGE/gateway:$CI_COMMIT_REF_NAME"     # dev branch tag
+    - docker push "$CI_REGISTRY_IMAGE/gateway:$CI_COMMIT_SHORT_SHA"    # immutable SHA tag
+    - if [ ! -z "$CI_COMMIT_TAG" ]; then docker push "$CI_REGISTRY_IMAGE/gateway:latest"; fi
+
+    # Push users images
+    - docker push "$CI_REGISTRY_IMAGE/users:$CI_COMMIT_REF_NAME"
+    - docker push "$CI_REGISTRY_IMAGE/users:$CI_COMMIT_SHORT_SHA"    # immutable SHA tag
+    - if [ ! -z "$CI_COMMIT_TAG" ]; then docker push "$CI_REGISTRY_IMAGE/users:latest"; fi
+
+    # Push orders images
+    - docker push "$CI_REGISTRY_IMAGE/orders:$CI_COMMIT_REF_NAME"
+    - docker push "$CI_REGISTRY_IMAGE/orders:$CI_COMMIT_SHORT_SHA"    # immutable SHA tag
+    - if [ ! -z "$CI_COMMIT_TAG" ]; then docker push "$CI_REGISTRY_IMAGE/orders:latest"; fi
+    
+
+stop_dev:
+  stage: deploy_dev
+  variables:
+    NAMESPACE: dev
+  when: manual
+  # Don't stop the "review" for master branch or tags,
+  # it is only for branches (so PRs (most of the time))
+  environment:
+    name: dev-$CI_COMMIT_REF_NAME
+    action: stop
+  script:
+    - sudo helm uninstall app -n $NAMESPACE
+
+stop_qa:
+  stage: deploy_qa
+  variables:
+    NAMESPACE: qa
+  when: manual
+  # Don't stop the "review" for master branch or tags,
+  # it is only for branches (so PRs (most of the time))
+  environment:
+    name: qa-$CI_COMMIT_REF_NAME
+    action: stop
+  script:
+    - sudo helm uninstall app -n $NAMESPACE
+
+stop_staging:
+  stage: deploy_staging
+  variables:
+    NAMESPACE: staging
+  when: manual
+  # Don't stop the "review" for master branch or tags,
+  # it is only for branches (so PRs (most of the time))
+  environment:
+    name: staging-$CI_COMMIT_REF_NAME
+    action: stop
+  script:
+    - sudo helm uninstall app -n $NAMESPACE
+
+deploy_dev:
+  environment:
+    name: dev-$CI_COMMIT_REF_NAME
+    url: http://$IP_DEV:$NODEPORT_DEV/docs
+    on_stop: stop_dev
+  stage: deploy_dev
+  variables:
+    NAMESPACE: dev
+  script:
+    # Setup kube config
+    - rm -rf .kube
+    - mkdir .kube
+    - cat $KUBE_CONFIG > .kube/config
+    # Deploy via Helm
+    - sudo helm upgrade --install app shopapp/ --values=shopapp/values-dev.yml --namespace "$NAMESPACE" --set gateway.image.repository="$CI_REGISTRY_IMAGE/gateway" --set gateway.image.tag="$CI_COMMIT_SHORT_SHA" --set users.image.repository="$CI_REGISTRY_IMAGE/users" --set users.image.tag="$CI_COMMIT_SHORT_SHA" --set orders.image.repository="$CI_REGISTRY_IMAGE/orders" --set orders.image.tag="$CI_COMMIT_SHORT_SHA" --set gateway.servicePort="$NODEPORT_DEV"
+
+deploy_qa:
+  environment:
+    name: qa-$CI_COMMIT_REF_NAME
+    url: http://$IP_QA:$NODEPORT_QA/docs
+    on_stop: stop_qa
+  stage: deploy_qa
+  variables:
+    NAMESPACE: qa
+  script:
+    - rm -rf .kube
+    - mkdir .kube
+    - cat $KUBE_CONFIG > .kube/config
+    - sudo helm upgrade --install app shopapp/ --values=shopapp/values-qa.yml --namespace "$NAMESPACE" --set gateway.image.repository="$CI_REGISTRY_IMAGE/gateway" --set gateway.image.tag="$CI_COMMIT_SHORT_SHA" --set users.image.repository="$CI_REGISTRY_IMAGE/users" --set users.image.tag="$CI_COMMIT_SHORT_SHA" --set orders.image.repository="$CI_REGISTRY_IMAGE/orders" --set orders.image.tag="$CI_COMMIT_SHORT_SHA" --set gateway.servicePort="$NODEPORT_QA"
+
+
+deploy_staging:
+  environment:
+    name: staging-$CI_COMMIT_REF_NAME
+    url: http://$IP_STAGING:$NODEPORT_STAGING/docs
+    on_stop: stop_staging
+  stage: deploy_staging
+  variables:
+    NAMESPACE: staging
+  script:
+    - rm -rf .kube
+    - mkdir .kube
+    - cat $KUBE_CONFIG > .kube/config
+    - sudo helm upgrade --install app shopapp/ --values=shopapp/values-staging.yml --namespace "$NAMESPACE" --set gateway.image.repository="$CI_REGISTRY_IMAGE/gateway" --set gateway.image.tag="$CI_COMMIT_SHORT_SHA" --set users.image.repository="$CI_REGISTRY_IMAGE/users" --set users.image.tag="$CI_COMMIT_SHORT_SHA" --set orders.image.repository="$CI_REGISTRY_IMAGE/orders" --set orders.image.tag="$CI_COMMIT_SHORT_SHA" --set gateway.servicePort="$NODEPORT_STAGING"
+
+deploy_prod:
+  stage: deploy_prod
+  when: manual                       # Manual deployment
+  only:
+    - main                            # Only allow on main branch
+  environment:
+    name: prod
+    url: http://$IP_PROD:$NODEPORT_PROD/docs
+  variables:
+    NAMESPACE: prod
+  script:
+    # Setup kubeconfig
+    - rm -rf .kube
+    - mkdir .kube
+    - cat $KUBE_CONFIG > .kube/config
+    # Deploy via Helm
+    - sudo helm upgrade --install app shopapp/ --values=shopapp/values-prod.yml --namespace "$NAMESPACE" --set gateway.image.repository="$CI_REGISTRY_IMAGE/gateway" --set gateway.image.tag="$CI_COMMIT_SHORT_SHA" --set users.image.repository="$CI_REGISTRY_IMAGE/users" --set users.image.tag="$CI_COMMIT_SHORT_SHA" --set orders.image.repository="$CI_REGISTRY_IMAGE/orders" --set orders.image.tag="$CI_COMMIT_SHORT_SHA" --set gateway.servicePort="$NODEPORT_PROD"
+
+push_docker_hub:
+  stage: push_docker_hub
+
+  before_script:
+    # Login to Docker Hub
+    - echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
+  script:
+    # Push gateway
+    - docker tag "$CI_REGISTRY_IMAGE/gateway:$CI_COMMIT_SHORT_SHA" "$DOCKER_HUB_USERNAME/gateway:latest"
+    - docker push "$DOCKER_HUB_USERNAME/gateway:latest"
+
+    # Push users
+    - docker tag "$CI_REGISTRY_IMAGE/users:$CI_COMMIT_SHORT_SHA" "$DOCKER_HUB_USERNAME/users:latest"
+    - docker push "$DOCKER_HUB_USERNAME/users:latest"
+
+    # Push orders
+    - docker tag "$CI_REGISTRY_IMAGE/orders:$CI_COMMIT_SHORT_SHA" "$DOCKER_HUB_USERNAME/orders:latest"
+    - docker push "$DOCKER_HUB_USERNAME/orders:latest"
+
+cleanup_images:
+  stage: cleanup
+  script:
+    - docker rmi -f "$CI_REGISTRY_IMAGE/gateway:latest" "$CI_REGISTRY_IMAGE/gateway:$CI_COMMIT_SHORT_SHA"
+    - docker rmi -f "$CI_REGISTRY_IMAGE/users:latest" "$CI_REGISTRY_IMAGE/users:$CI_COMMIT_SHORT_SHA"
+    - docker rmi -f "$CI_REGISTRY_IMAGE/orders:latest" "$CI_REGISTRY_IMAGE/orders:$CI_COMMIT_SHORT_SHA"
+  when: always

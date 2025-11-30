@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: orders
+    env: {{ .Values.global.environment }}
+spec:
+  replicas: {{ .Values.global.replicaCount }}
+  selector:
+    matchLabels:
+      app: orders
+  template:
+    metadata:
+      labels:
+        app: orders
+        env: {{ .Values.global.environment }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | nindent 8 }}
+    {{- end }}
+      containers:
+        - name: orders
+          image: "{{ .Values.orders.image.repository }}:{{ .Values.orders.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          command: ["sh", "-c", "uvicorn main:app --reload --host 0.0.0.0"]
+          ports:
+            - containerPort: {{ .Values.orders.port }}
+          resources: {{- toYaml .Values.orders.resources | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: orders-env
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orders-env
+data:
+{{ (.Files.Get .Values.orders.envFile) | indent 2 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders
+  labels:
+    app: orders
+    env: {{ .Values.global.environment }}
+spec:
+  selector:
+    app: orders
+  ports:
+    - protocol: TCP
+      port: {{ .Values.orders.port }}
+      targetPort: {{ .Values.orders.port }}
+  type: ClusterIP

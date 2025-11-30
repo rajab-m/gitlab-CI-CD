@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: gateway
+    env: {{ .Values.global.environment }}
+spec:
+  replicas: {{ .Values.global.replicaCount }}
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+        env: {{ .Values.global.environment }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | nindent 8 }}
+    {{- end }}
+
+      containers:
+        - name: gateway
+          image: "{{ .Values.gateway.image.repository }}:{{ .Values.gateway.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          command: ["sh", "-c", "uvicorn main:app --reload --host 0.0.0.0"]
+          ports:
+            - containerPort: {{ .Values.gateway.port }}
+          resources: {{- toYaml .Values.gateway.resources | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: gateway-env
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-env
+data:
+{{ (.Files.Get .Values.gateway.envFile) | indent 2 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  labels:
+    app: gateway
+    env: {{ .Values.global.environment }}
+spec:
+  selector:
+    app: gateway
+  ports:
+    - protocol: TCP
+      port: {{ .Values.gateway.port }}
+      targetPort: {{ .Values.gateway.port }}
+      nodePort: {{ .Values.gateway.servicePort }}
+  type: {{ .Values.gateway.nodeType }}

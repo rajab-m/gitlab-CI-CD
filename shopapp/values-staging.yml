@@ -1,0 +1,42 @@
+global:
+  environment: staging
+  namespace: staging
+  replicaCount: 2
+  imagePullPolicy: IfNotPresent
+  imagePullSecrets:
+    - name: regcred
+
+gateway:
+  mage:
+    repository: gateway-image
+    tag: latest
+  port: 8000
+  servicePort: 30003
+  nodeType: NodePort
+  envFile: ../gateway/.env
+  resources:
+    limits:
+      cpu: "200m"
+      memory: "512Mi"
+
+users:
+  image:
+    repository: users-image
+    tag: latest
+  port: 8000
+  envFile: ../users/.env
+  resources:
+    limits:
+      cpu: "200m"
+      memory: "512Mi"
+
+orders:
+  image: 
+    repository: orders-image
+    tag: latest
+  port: 8000
+  envFile: ../orders/.env
+  resources:
+    limits:
+      cpu: "200m"
+      memory: "512Mi"
