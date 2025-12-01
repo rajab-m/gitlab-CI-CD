@@ -1,5 +1,4 @@
 variables:
-  # The domain used for the live deploy_prodment
   KUBE_NAMESPACE_dev: dev
   KUBE_NAMESPACE_staging: staging
   KUBE_NAMESPACE_prod: prod
@@ -60,7 +59,6 @@ run:
 
     # Test endpoints
     - curl http://localhost:8001/docs  # gateway
-    # For users/orders, you may need container IPs or a custom network
 
     # Cleanup
     - docker stop gateway users orders
@@ -69,7 +67,7 @@ run:
 push:
   stage: push
   before_script:
-    # Show Docker daemon info (optional, good for debugging)
+    # Show Docker daemon info
     - docker info
     # Login to GitLab Container Registry
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
@@ -95,8 +93,7 @@ stop_dev:
   variables:
     NAMESPACE: dev
   when: manual
-  # Don't stop the "review" for master branch or tags,
-  # it is only for branches (so PRs (most of the time))
+  # Don't stop the "review" for master branch or tags
   environment:
     name: dev-$CI_COMMIT_REF_NAME
     action: stop
@@ -108,8 +105,6 @@ stop_qa:
   variables:
     NAMESPACE: qa
   when: manual
-  # Don't stop the "review" for master branch or tags,
-  # it is only for branches (so PRs (most of the time))
   environment:
     name: qa-$CI_COMMIT_REF_NAME
     action: stop
@@ -121,8 +116,6 @@ stop_staging:
   variables:
     NAMESPACE: staging
   when: manual
-  # Don't stop the "review" for master branch or tags,
-  # it is only for branches (so PRs (most of the time))
   environment:
     name: staging-$CI_COMMIT_REF_NAME
     action: stop
